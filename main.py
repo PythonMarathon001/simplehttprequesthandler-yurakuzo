@@ -26,21 +26,20 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(content_length).decode('utf-8'))  # <--- Gets the data itself
     
     def do_GET(self):
-            status = 200
-
-            if self.path == "/users":
-                body = USERS_LIST
+        status = 200
+        if self.path == "/users":
+            body = USERS_LIST
+            return self._set_response(status, body)
+        for data in USERS_LIST:
+            if self.path == f"/user/{data['username']}":
+                body = data
+                return self._set_response(status, body)
+            else:
+                status = 400
+                body = {'error': 'User not found'}
+        
                 return self._set_response(status, body)
 
-            for data in USERS_LIST:
-                if self.path == f"/user/{data['username']}":
-                    body = data
-                    return self._set_response(status, body)
-                else:
-                    status = 400
-                    body = {'error': 'User not found'}
-            
-                    return self._set_response(status, body)
     def do_POST(self):
         data = self._pars_body()
         
@@ -70,12 +69,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_PUT(self):
         pars = self._pars_body()
 
-        check_valid_data = ["username", "firstName", "lastName", "email", "password"]
+        check_valid_data = ["username","firstName", "lastName", "email", "password"] 
 
         for data in USERS_LIST:
-            if check_valid_data == list(pars.keys())\
-            and self.path == f"/user/{data['username']}":
-                pars.update({'id': data['id']})
+            if check_valid_data == list(pars.keys()) and self.path == f"/user/{data['username']}":
+                pars.update({'id':data['id']})
                 status = 200
                 body = pars
                 return self._set_response(status, body)
@@ -100,7 +98,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 status = 404
                 body = {'error': 'User not found'}
                 return self._set_response(status, body)
-
 
 def run(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler, host='localhost', port=8000):
     server_address = (host, port)
