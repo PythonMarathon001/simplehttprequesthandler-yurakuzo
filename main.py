@@ -42,16 +42,15 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         data = self._pars_body()
-        
+
         if isinstance(data, dict):
             data = [data]
-
         try:
-            id_list = [data['id'] for data in USERS_LIST]
-        
-            for data in data:
-                if data["id"] not in id_list:
-                    id_list.append(data["id"])
+            id_list = [1]
+            for dct in data:
+                if dct["id"] not in id_list:
+                    id_list.append(dct["id"])
+
                 else:
                     return self._set_response(400)
 
@@ -69,11 +68,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_PUT(self):
         pars = self._pars_body()
 
-        check_valid_data = ["username","firstName", "lastName", "email", "password"] 
+        valid_keywords = ["username", "firstName", "lastName", "email", "password"]
 
         for data in USERS_LIST:
-            if check_valid_data == list(pars.keys()) and self.path == f"/user/{data['username']}":
-                pars.update({'id':data['id']})
+            if valid_keywords == list(pars.keys())\
+            and self.path == f"/user/{data['username']}":
+                pars.update({'id': data['id']})
                 status = 200
                 body = pars
                 return self._set_response(status, body)
