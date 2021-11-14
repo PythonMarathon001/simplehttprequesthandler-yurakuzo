@@ -24,24 +24,82 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def _pars_body(self):
         content_length = int(self.headers['Content-Length'])  # <--- Gets the size of data
         return json.loads(self.rfile.read(content_length).decode('utf-8'))  # <--- Gets the data itself
-
+    
     def do_GET(self):
-        
-        if self.path == '/users':
             status = 200
-            body = USERS_LIST
-            self._set_response(status, body)
-        else:
-            self._set_response(418)
 
+            if self.path == "/users":
+                body = USERS_LIST
+                return self._set_response(status, body)
+
+            for data in USERS_LIST:
+                if self.path == f"/user/{data['username']}":
+                    body = data
+                    return self._set_response(status, body)
+                else:
+                    status = 400
+                    body = {'error': 'User not found'}
+            
+                    return self._set_response(status, body)
     def do_POST(self):
-        self._set_response(418)
+        data = self._pars_body()
+        
+        if isinstance(data, dict):
+            data = [data]
+
+        try:
+            id_list = [data['id'] for data in USERS_LIST]
+        
+            for data in data:
+                if data["id"] not in id_list:
+                    id_list.append(data["id"])
+                else:
+                    return self._set_response(400)
+
+        except KeyError:
+            return self._set_response(400)
+        
+        status = 201
+        body = data
+        
+        if len(body) == 1:
+            return self._set_response(status, body[0])   
+        
+        return self._set_response(status, body)   
 
     def do_PUT(self):
-        self._set_response(418)
+        pars = self._pars_body()
+
+        check_valid_data = ["username", "firstName", "lastName", "email", "password"]
+
+        for data in USERS_LIST:
+            if check_valid_data == list(pars.keys())\
+            and self.path == f"/user/{data['username']}":
+                pars.update({'id': data['id']})
+                status = 200
+                body = pars
+                return self._set_response(status, body)
+            
+            elif self.path != f"/user/{data['username']}":
+                status = 404
+                body = {'error': 'User not found'}
+                return self._set_response(status, body)
+
+            else:
+                status = 400
+                body = {"error": "not valid request data"}
+                return self._set_response(status, body)
 
     def do_DELETE(self):
-        self._set_response(418)
+        for data in USERS_LIST:
+            if self.path == f"/user/{data['id']}":
+                status = 200
+                body = {}
+                return self._set_response(status, body)
+            else:
+                status = 404
+                body = {'error': 'User not found'}
+                return self._set_response(status, body)
 
 
 def run(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler, host='localhost', port=8000):
